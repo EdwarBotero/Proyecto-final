@@ -1,6 +1,4 @@
-Placa,Tipo,Entrada,Salida,Horas,Valor
-CKL,Moto,16,17,1,1500.0
-CKL678,Moto,14,17,3,4500.0
-CKL098,Carro,3,1,22,66000.0
-CKL124,Carro,6,8,2,6000.0
-CKL123,Moto,12,17,5,7500.0
+Placa,Tipo,Fecha Entrada,Hora Entrada,Fecha Salida,Hora Salida,Duración (horas),Valor
+CHT345,Moto,2025-05-18,12:10,2025-05-18,23:10,11.0,16500.0
+ABC124,Moto,2025-05-18,13:00,2025-05-18,17:57,4.95,7500.0
+ABC123,Carro,2025-05-18,11:57,2025-05-18,11:58,0.02,750.0
