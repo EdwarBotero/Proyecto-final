@@ -1,78 +1,20 @@
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout,
+from PyQt5.QtWidgets import (QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout,
                             QLabel, QLineEdit, QPushButton, QComboBox, QTableWidget, QTableWidgetItem,
                             QHeaderView, QMessageBox, QFileDialog, QDateEdit, QTimeEdit, QGroupBox,
-                            QFormLayout, QSpinBox, QCheckBox, QDialog, QDialogButtonBox, QSplitter,
-                            QFrame, QToolTip, QStatusBar, QProgressBar, QToolBar, QAction, QMenu)
-from PyQt5.QtCore import Qt, QDate, QTime, QRegExp, QTimer, QSize
-from PyQt5.QtGui import QIcon, QPixmap, QRegExpValidator, QFont, QColor, QPalette
+                            QFormLayout, QCheckBox, QStatusBar)
+from PyQt5.QtCore import Qt, QDate, QTime, QRegExp, QTimer
+from PyQt5.QtGui import QRegExpValidator, QFont
 import database_mejorado as db
 import sys
 import os
 from datetime import datetime
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import numpy as np
 
 # Definimos la ruta para los iconos
 ICON_PATH = "icons"
 
-class LoginDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Iniciar Sesión - Sistema de Parqueadero")
-        self.setMinimumWidth(300)
-        self.setup_ui()
-        
-    def setup_ui(self):
-        layout = QVBoxLayout(self)
-        
-        # Título
-        title_label = QLabel("Iniciar Sesión")
-        title_label.setAlignment(Qt.AlignCenter)
-        title_font = QFont()
-        title_font.setPointSize(14)
-        title_font.setBold(True)
-        title_label.setFont(title_font)
-        layout.addWidget(title_label)
-        
-        # Formulario
-        form_layout = QFormLayout()
-        
-        self.usuario_input = QLineEdit()
-        self.usuario_input.setPlaceholderText("Nombre de usuario")
-        form_layout.addRow("Usuario:", self.usuario_input)
-        
-        self.password_input = QLineEdit()
-        self.password_input.setPlaceholderText("Contraseña")
-        self.password_input.setEchoMode(QLineEdit.Password)
-        form_layout.addRow("Contraseña:", self.password_input)
-        
-        layout.addLayout(form_layout)
-        
-        # Botones
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        button_box.accepted.connect(self.accept)
-        button_box.rejected.connect(self.reject)
-        layout.addWidget(button_box)
-        
-        # Valores por defecto para desarrollo
-        self.usuario_input.setText("admin")
-        self.password_input.setText("admin123")
-    
-    def get_credentials(self):
-        return self.usuario_input.text(), self.password_input.text()
-
 class ParkingApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        
-        # Inicializar variables de usuario
-        self.usuario_actual = None
-        self.rol_usuario = None
-        
-        # Mostrar diálogo de login
-        if not self.mostrar_login():
-            sys.exit(0)
         
         # Configurar la interfaz principal
         self.setup_ui()
@@ -86,29 +28,14 @@ class ParkingApp(QMainWindow):
         if not os.path.exists(ICON_PATH):
             os.makedirs(ICON_PATH)
     
-    def mostrar_login(self):
-        dialog = LoginDialog(self)
-        if dialog.exec_() == QDialog.Accepted:
-            usuario, password = dialog.get_credentials()
-            success, result = db.verificar_usuario(usuario, password)
-            if success:
-                self.usuario_actual = result["usuario"]
-                self.rol_usuario = result["rol"]
-                self.nombre_usuario = result["nombre"]
-                return True
-            else:
-                QMessageBox.critical(self, "Error de autenticación", result)
-                return self.mostrar_login()  # Volver a intentar
-        return False
-    
     def setup_ui(self):
-        self.setWindowTitle(f"Sistema de Parqueadero - Usuario: {self.nombre_usuario}")
+        self.setWindowTitle("Sistema de Parqueadero")
         self.setGeometry(100, 100, 1000, 700)
         
         # Crear barra de estado
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
-        self.statusBar.showMessage(f"Bienvenido, {self.nombre_usuario} | Rol: {self.rol_usuario}")
+        self.statusBar.showMessage("Sistema de Parqueadero")
         
         # Widget central y layout principal
         central_widget = QWidget()
@@ -124,7 +51,6 @@ class ParkingApp(QMainWindow):
         self.crear_tab_salida()
         self.crear_tab_activos()
         self.crear_tab_historial()
-        self.crear_tab_estadisticas()
         
         # Cargar datos iniciales
         self.actualizar_datos()
@@ -133,7 +59,6 @@ class ParkingApp(QMainWindow):
         """Actualiza todos los datos dinámicos de la interfaz."""
         self.cargar_vehiculos_activos()
         self.cargar_historial()
-        self.actualizar_estadisticas()
     
     def crear_tab_ingreso(self):
         tab = QWidget()
@@ -389,7 +314,7 @@ class ParkingApp(QMainWindow):
                 fecha_actual, 
                 hora_actual, 
                 minuto_actual, 
-                self.usuario_actual
+                "sistema"
             )
             
             if success:
@@ -420,12 +345,12 @@ class ParkingApp(QMainWindow):
         titulo.setFont(titulo_font)
         layout.addWidget(titulo)
         
-        # Filtros
+        # Filtros en un GroupBox
         filtros_group = QGroupBox("Filtros")
-        filtros_layout = QHBoxLayout()
+        filtros_layout = QVBoxLayout()
         
         # Filtro por placa
-        filtro_placa_layout = QVBoxLayout()
+        filtro_placa_layout = QHBoxLayout()
         filtro_placa_layout.addWidget(QLabel("Placa:"))
         self.filtro_placa = QLineEdit()
         self.filtro_placa.setPlaceholderText("Filtrar por placa")
@@ -433,7 +358,7 @@ class ParkingApp(QMainWindow):
         filtros_layout.addLayout(filtro_placa_layout)
         
         # Filtro por tipo
-        filtro_tipo_layout = QVBoxLayout()
+        filtro_tipo_layout = QHBoxLayout()
         filtro_tipo_layout.addWidget(QLabel("Tipo:"))
         self.filtro_tipo = QComboBox()
         self.filtro_tipo.addItems(["Todos", "Carro", "Moto"])
@@ -441,26 +366,38 @@ class ParkingApp(QMainWindow):
         filtros_layout.addLayout(filtro_tipo_layout)
         
         # Filtro por fecha
-        filtro_fecha_layout = QVBoxLayout()
+        filtro_fecha_layout = QHBoxLayout()
+        
         filtro_fecha_layout.addWidget(QLabel("Desde:"))
         self.filtro_fecha_inicio = QDateEdit()
         self.filtro_fecha_inicio.setCalendarPopup(True)
         self.filtro_fecha_inicio.setDate(QDate.currentDate().addDays(-30))
         filtro_fecha_layout.addWidget(self.filtro_fecha_inicio)
-        filtros_layout.addLayout(filtro_fecha_layout)
         
-        filtro_fecha_fin_layout = QVBoxLayout()
-        filtro_fecha_fin_layout.addWidget(QLabel("Hasta:"))
+        filtro_fecha_layout.addWidget(QLabel("Hasta:"))
         self.filtro_fecha_fin = QDateEdit()
         self.filtro_fecha_fin.setCalendarPopup(True)
         self.filtro_fecha_fin.setDate(QDate.currentDate())
-        filtro_fecha_fin_layout.addWidget(self.filtro_fecha_fin)
-        filtros_layout.addLayout(filtro_fecha_fin_layout)
+        filtro_fecha_layout.addWidget(self.filtro_fecha_fin)
         
-        # Botón de filtrar
-        self.btn_filtrar = QPushButton("Aplicar Filtros")
-        self.btn_filtrar.clicked.connect(self.cargar_historial)
-        filtros_layout.addWidget(self.btn_filtrar)
+        filtros_layout.addLayout(filtro_fecha_layout)
+        
+        # Botones de filtro
+        filtro_botones_layout = QHBoxLayout()
+        
+        self.btn_aplicar_filtros = QPushButton("Aplicar Filtros")
+        self.btn_aplicar_filtros.clicked.connect(self.cargar_historial)
+        filtro_botones_layout.addWidget(self.btn_aplicar_filtros)
+        
+        self.btn_exportar_csv = QPushButton("Exportar CSV")
+        self.btn_exportar_csv.clicked.connect(lambda: self.exportar_historial("csv"))
+        filtro_botones_layout.addWidget(self.btn_exportar_csv)
+        
+        self.btn_exportar_excel = QPushButton("Exportar Excel")
+        self.btn_exportar_excel.clicked.connect(lambda: self.exportar_historial("excel"))
+        filtro_botones_layout.addWidget(self.btn_exportar_excel)
+        
+        filtros_layout.addLayout(filtro_botones_layout)
         
         filtros_group.setLayout(filtros_layout)
         layout.addWidget(filtros_group)
@@ -476,23 +413,6 @@ class ParkingApp(QMainWindow):
         self.tabla_historial.setEditTriggers(QTableWidget.NoEditTriggers)
         self.tabla_historial.setSelectionBehavior(QTableWidget.SelectRows)
         layout.addWidget(self.tabla_historial)
-        
-        # Botones
-        btn_layout = QHBoxLayout()
-        
-        self.btn_actualizar = QPushButton("Actualizar")
-        self.btn_actualizar.clicked.connect(self.cargar_historial)
-        btn_layout.addWidget(self.btn_actualizar)
-        
-        self.btn_exportar_csv = QPushButton("Exportar CSV")
-        self.btn_exportar_csv.clicked.connect(lambda: self.exportar_historial("csv"))
-        btn_layout.addWidget(self.btn_exportar_csv)
-        
-        self.btn_exportar_excel = QPushButton("Exportar Excel")
-        self.btn_exportar_excel.clicked.connect(lambda: self.exportar_historial("excel"))
-        btn_layout.addWidget(self.btn_exportar_excel)
-        
-        layout.addLayout(btn_layout)
     
     def cargar_historial(self):
         """Carga el historial de vehículos con los filtros aplicados."""
@@ -581,134 +501,6 @@ class ParkingApp(QMainWindow):
                 else:
                     QMessageBox.critical(self, "Error", message)
     
-    def crear_tab_estadisticas(self):
-        tab = QWidget()
-        self.tabs.addTab(tab, "Estadísticas")
-        layout = QVBoxLayout(tab)
-        
-        # Título
-        titulo = QLabel("Estadísticas del Parqueadero")
-        titulo.setAlignment(Qt.AlignCenter)
-        titulo_font = QFont()
-        titulo_font.setPointSize(14)
-        titulo_font.setBold(True)
-        titulo.setFont(titulo_font)
-        layout.addWidget(titulo)
-        
-        # Filtros de fecha para estadísticas
-        filtros_group = QGroupBox("Período")
-        filtros_layout = QHBoxLayout()
-        
-        filtros_layout.addWidget(QLabel("Desde:"))
-        self.stats_fecha_inicio = QDateEdit()
-        self.stats_fecha_inicio.setCalendarPopup(True)
-        self.stats_fecha_inicio.setDate(QDate.currentDate().addDays(-30))
-        filtros_layout.addWidget(self.stats_fecha_inicio)
-        
-        filtros_layout.addWidget(QLabel("Hasta:"))
-        self.stats_fecha_fin = QDateEdit()
-        self.stats_fecha_fin.setCalendarPopup(True)
-        self.stats_fecha_fin.setDate(QDate.currentDate())
-        filtros_layout.addWidget(self.stats_fecha_fin)
-        
-        self.btn_actualizar_stats = QPushButton("Actualizar Estadísticas")
-        self.btn_actualizar_stats.clicked.connect(self.actualizar_estadisticas)
-        filtros_layout.addWidget(self.btn_actualizar_stats)
-        
-        filtros_group.setLayout(filtros_layout)
-        layout.addWidget(filtros_group)
-        
-        # Panel de estadísticas
-        stats_layout = QHBoxLayout()
-        
-        # Panel izquierdo - Resumen
-        self.panel_resumen = QGroupBox("Resumen")
-        resumen_layout = QVBoxLayout()
-        
-        self.lbl_total_ingresos = QLabel("Total Ingresos: $0")
-        self.lbl_total_ingresos.setFont(QFont("Arial", 12, QFont.Bold))
-        resumen_layout.addWidget(self.lbl_total_ingresos)
-        
-        self.lbl_vehiculos_tipo = QLabel("Vehículos por tipo:")
-        resumen_layout.addWidget(self.lbl_vehiculos_tipo)
-        
-        self.lbl_promedio_duracion = QLabel("Duración promedio: 0 horas")
-        resumen_layout.addWidget(self.lbl_promedio_duracion)
-        
-        self.lbl_horas_pico = QLabel("Horas pico:")
-        resumen_layout.addWidget(self.lbl_horas_pico)
-        
-        self.panel_resumen.setLayout(resumen_layout)
-        stats_layout.addWidget(self.panel_resumen)
-        
-        # Panel derecho - Gráficos
-        self.panel_graficos = QGroupBox("Gráficos")
-        graficos_layout = QVBoxLayout()
-        
-        # Crear figura para gráficos
-        self.figure = plt.figure(figsize=(5, 4))
-        self.canvas = FigureCanvas(self.figure)
-        graficos_layout.addWidget(self.canvas)
-        
-        self.panel_graficos.setLayout(graficos_layout)
-        stats_layout.addWidget(self.panel_graficos)
-        
-        layout.addLayout(stats_layout)
-    
-    def actualizar_estadisticas(self):
-        """Actualiza las estadísticas y gráficos."""
-        fecha_inicio = self.stats_fecha_inicio.date().toString("yyyy-MM-dd")
-        fecha_fin = self.stats_fecha_fin.date().toString("yyyy-MM-dd")
-        
-        # Obtener estadísticas
-        stats = db.obtener_estadisticas(fecha_inicio, fecha_fin)
-        if not stats:
-            return
-        
-        # Actualizar etiquetas de resumen
-        self.lbl_total_ingresos.setText(f"Total Ingresos: ${stats['total_ingresos']:,.0f}")
-        
-        # Vehículos por tipo
-        vehiculos_texto = "Vehículos por tipo:\n"
-        for tipo, cantidad in stats['vehiculos_por_tipo']:
-            vehiculos_texto += f"- {tipo}: {cantidad}\n"
-        self.lbl_vehiculos_tipo.setText(vehiculos_texto)
-        
-        # Duración promedio
-        self.lbl_promedio_duracion.setText(f"Duración promedio: {stats['promedio_duracion']:.2f} horas")
-        
-        # Horas pico
-        horas_texto = "Horas pico:\n"
-        for hora, cantidad in stats['horas_pico']:
-            horas_texto += f"- {hora}:00: {cantidad} vehículos\n"
-        self.lbl_horas_pico.setText(horas_texto)
-        
-        # Actualizar gráficos
-        self.figure.clear()
-        
-        # Gráfico de vehículos por tipo
-        ax1 = self.figure.add_subplot(121)
-        tipos = [t[0] for t in stats['vehiculos_por_tipo']]
-        cantidades = [t[1] for t in stats['vehiculos_por_tipo']]
-        
-        if tipos and cantidades:
-            ax1.pie(cantidades, labels=tipos, autopct='%1.1f%%', startangle=90)
-            ax1.axis('equal')
-            ax1.set_title('Vehículos por Tipo')
-        
-        # Gráfico de horas pico
-        ax2 = self.figure.add_subplot(122)
-        horas = [h[0] for h in stats['horas_pico']]
-        cantidades_hora = [h[1] for h in stats['horas_pico']]
-        
-        if horas and cantidades_hora:
-            ax2.bar(horas, cantidades_hora)
-            ax2.set_xlabel('Hora')
-            ax2.set_ylabel('Cantidad')
-            ax2.set_title('Horas Pico')
-        
-        self.canvas.draw()
-    
     def registrar_ingreso_ui(self):
         """Registra el ingreso de un vehículo desde la interfaz."""
         placa = self.placa_ingreso.text().strip().upper()
@@ -728,7 +520,7 @@ class ParkingApp(QMainWindow):
             minuto = self.hora_ingreso.time().minute()
         
         # Registrar ingreso
-        success, message = db.registrar_ingreso(placa, fecha, hora, minuto, tipo, self.usuario_actual)
+        success, message = db.registrar_ingreso(placa, fecha, hora, minuto, tipo, "sistema")
         
         if success:
             QMessageBox.information(
@@ -771,7 +563,7 @@ class ParkingApp(QMainWindow):
         
         if reply == QMessageBox.Yes:
             # Registrar salida
-            success, result = db.registrar_salida(placa, fecha, hora, minuto, self.usuario_actual)
+            success, result = db.registrar_salida(placa, fecha, hora, minuto, "sistema")
             
             if success:
                 QMessageBox.information(

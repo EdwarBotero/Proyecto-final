@@ -42,18 +42,6 @@ def conectar():
         )
     ''')
     
-    # Creamos tabla de usuarios
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT,
-            usuario TEXT UNIQUE,
-            password TEXT,
-            rol TEXT CHECK (rol IN ('admin', 'operador')),
-            activo INTEGER DEFAULT 1
-        )
-    ''')
-    
     # Creamos tabla de tarifas
     conn.execute('''
         CREATE TABLE IF NOT EXISTS tarifas (
@@ -68,27 +56,19 @@ def conectar():
         )
     ''')
     
-    # Insertamos usuario admin por defecto si no existe
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM usuarios")
-    if cursor.fetchone()[0] == 0:
-        conn.execute(
-            "INSERT INTO usuarios (nombre, usuario, password, rol) VALUES (?, ?, ?, ?)",
-            ("Administrador", "admin", "admin123", "admin")
-        )
-    
     # Insertamos tarifas por defecto si no existen
+    cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM tarifas")
     if cursor.fetchone()[0] == 0:
         # Tarifa para carros (todos los días)
         conn.execute(
             "INSERT INTO tarifas (tipo_vehiculo, dia_semana, hora_inicio, hora_fin, tarifa_hora, tarifa_fraccion) VALUES (?, ?, ?, ?, ?, ?)",
-            ("Carro", "todos", 0, 23, 3000, 750)
+            ("Carro", "todos", 0, 23, 5000, 1200)
         )
         # Tarifa para motos (todos los días)
         conn.execute(
             "INSERT INTO tarifas (tipo_vehiculo, dia_semana, hora_inicio, hora_fin, tarifa_hora, tarifa_fraccion) VALUES (?, ?, ?, ?, ?, ?)",
-            ("Moto", "todos", 0, 23, 1500, 400)
+            ("Moto", "todos", 0, 23, 3500, 900)
         )
     
     conn.commit()
@@ -150,11 +130,11 @@ def obtener_tarifa(tipo_vehiculo, fecha, hora):
             return resultado
         
         # Si no hay tarifa específica, usamos la tarifa por defecto
-        return (3000, 750) if tipo_vehiculo == "Carro" else (1500, 400)
+        return (5000, 1200) if tipo_vehiculo == "Carro" else (3500, 900)
     
     except sqlite3.Error as e:
         print(f"Error al obtener tarifa: {e}")
-        return (3000, 750) if tipo_vehiculo == "Carro" else (1500, 400)
+        return (5000, 1200) if tipo_vehiculo == "Carro" else (3500, 900)
 
 def calcular_valor(tipo_vehiculo, duracion_horas, fecha_entrada, hora_entrada):
     """Calcula el valor a pagar según tipo de vehículo y duración."""
@@ -187,8 +167,8 @@ def calcular_valor(tipo_vehiculo, duracion_horas, fecha_entrada, hora_entrada):
     except Exception as e:
         print(f"Error en cálculo de valor: {e}")
         # Valores por defecto en caso de error
-        tarifas = {"Carro": 3000, "Moto": 1500}
-        return tarifas.get(tipo_vehiculo, 2000) * duracion_horas
+        tarifas = {"Carro": 5000, "Moto": 3500}
+        return tarifas.get(tipo_vehiculo, 3000) * duracion_horas
 
 def validar_placa(placa):
     """Valida el formato de la placa según normativa colombiana."""
@@ -420,24 +400,20 @@ def exportar_historial_excel(ruta="historial_parqueadero.xlsx", filtro_placa=Non
             placa, tipo, fecha_entrada, hora_entrada, minuto_entrada, \
             fecha_salida, hora_salida, minuto_salida, duracion, valor = fila
             
-            # Formateamos las horas para mejor legibilidad
-            entrada_str = f"{hora_entrada}:{minuto_entrada:02d}"
-            salida_str = f"{hora_salida}:{minuto_salida:02d}" if fecha_salida else "N/A"
-            
-            # Insertamos datos en la hoja
             ws.cell(row=row_num, column=1, value=placa)
             ws.cell(row=row_num, column=2, value=tipo)
             ws.cell(row=row_num, column=3, value=fecha_entrada)
-            ws.cell(row=row_num, column=4, value=entrada_str)
+            ws.cell(row=row_num, column=4, value=f"{hora_entrada}:{minuto_entrada:02d}")
             ws.cell(row=row_num, column=5, value=fecha_salida if fecha_salida else "N/A")
-            ws.cell(row=row_num, column=6, value=salida_str)
+            ws.cell(row=row_num, column=6, value=f"{hora_salida}:{minuto_salida:02d}" if fecha_salida else "N/A")
             ws.cell(row=row_num, column=7, value=duracion)
-            ws.cell(row=row_num, column=8, value=valor)
             
-            # Formato para valor
-            ws.cell(row=row_num, column=8).number_format = "$#,##0"
+            # Formato para el valor
+            cell = ws.cell(row=row_num, column=8, value=valor)
+            cell.number_format = "$#,##0"
+            cell.alignment = Alignment(horizontal="right")
         
-        # Ajustamos ancho de columnas
+        # Ajustamos anchos de columna
         for col in ws.columns:
             max_length = 0
             column = col[0].column_letter
@@ -454,117 +430,6 @@ def exportar_historial_excel(ruta="historial_parqueadero.xlsx", filtro_placa=Non
     except Exception as e:
         print(f"Error al exportar Excel: {e}")
         return False, f"Error al exportar: {e}"
-
-def realizar_backup():
-    """Realiza una copia de seguridad de la base de datos."""
-    try:
-        import shutil
-        from datetime import datetime
-        
-        if not DB_PATH.exists():
-            return False, "No existe la base de datos para respaldar"
-        
-        # Creamos directorio de backups si no existe
-        backup_dir = Path("data/backups")
-        backup_dir.mkdir(exist_ok=True, parents=True)
-        
-        # Nombre del archivo de backup con timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_file = backup_dir / f"parking_backup_{timestamp}.db"
-        
-        # Copiamos la base de datos
-        shutil.copy2(DB_PATH, backup_file)
-        
-        return True, f"Backup creado en {backup_file}"
-    
-    except Exception as e:
-        print(f"Error al realizar backup: {e}")
-        return False, f"Error al realizar backup: {e}"
-
-def verificar_usuario(usuario, password):
-    """Verifica las credenciales de un usuario."""
-    try:
-        conn = conectar()
-        cursor = conn.cursor()
-        
-        cursor.execute(
-            "SELECT id, nombre, rol FROM usuarios WHERE usuario = ? AND password = ? AND activo = 1",
-            (usuario, password)
-        )
-        
-        resultado = cursor.fetchone()
-        if resultado:
-            return True, {
-                "id": resultado[0],
-                "nombre": resultado[1],
-                "rol": resultado[2],
-                "usuario": usuario
-            }
-        
-        return False, "Credenciales inválidas o usuario inactivo"
-    
-    except sqlite3.Error as e:
-        print(f"Error al verificar usuario: {e}")
-        return False, f"Error en la base de datos: {e}"
-
-def obtener_estadisticas(fecha_inicio=None, fecha_fin=None):
-    """Obtiene estadísticas de uso del parqueadero."""
-    try:
-        conn = conectar()
-        cursor = conn.cursor()
-        
-        # Si no se proporcionan fechas, usamos el último mes
-        if not fecha_inicio:
-            fecha_inicio = (datetime.now().replace(day=1) - datetime.timedelta(days=30)).strftime("%Y-%m-%d")
-        
-        if not fecha_fin:
-            fecha_fin = datetime.now().strftime("%Y-%m-%d")
-        
-        # Total de ingresos
-        cursor.execute(
-            "SELECT SUM(valor_pagado) FROM historial WHERE fecha_entrada BETWEEN ? AND ?",
-            (fecha_inicio, fecha_fin)
-        )
-        total_ingresos = cursor.fetchone()[0] or 0
-        
-        # Vehículos por tipo
-        cursor.execute(
-            "SELECT tipo, COUNT(*) FROM historial WHERE fecha_entrada BETWEEN ? AND ? GROUP BY tipo",
-            (fecha_inicio, fecha_fin)
-        )
-        vehiculos_por_tipo = cursor.fetchall()
-        
-        # Promedio de duración
-        cursor.execute(
-            "SELECT AVG(duracion_horas) FROM historial WHERE fecha_entrada BETWEEN ? AND ?",
-            (fecha_inicio, fecha_fin)
-        )
-        promedio_duracion = cursor.fetchone()[0] or 0
-        
-        # Horas pico (más entradas)
-        cursor.execute(
-            """
-            SELECT hora_entrada, COUNT(*) as cantidad 
-            FROM historial 
-            WHERE fecha_entrada BETWEEN ? AND ?
-            GROUP BY hora_entrada 
-            ORDER BY cantidad DESC 
-            LIMIT 3
-            """,
-            (fecha_inicio, fecha_fin)
-        )
-        horas_pico = cursor.fetchall()
-        
-        return {
-            "total_ingresos": total_ingresos,
-            "vehiculos_por_tipo": vehiculos_por_tipo,
-            "promedio_duracion": promedio_duracion,
-            "horas_pico": horas_pico
-        }
-    
-    except sqlite3.Error as e:
-        print(f"Error al obtener estadísticas: {e}")
-        return None
 
 # Migración de datos antiguos (si es necesario)
 def migrar_datos_antiguos():

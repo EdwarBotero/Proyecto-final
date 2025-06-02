@@ -6,8 +6,7 @@ Para ejecutar el sistema mejorado, necesitarás tener instalado:
 
 1. Python 3.6 o superior
 2. PyQt5 (`pip install PyQt5`)
-3. Matplotlib (`pip install matplotlib`) - Para gráficos y estadísticas
-4. Openpyxl (`pip install openpyxl`) - Para exportación a Excel
+3. Openpyxl (`pip install openpyxl`) - Para exportación a Excel
 
 ## Estructura de archivos
 
@@ -21,7 +20,7 @@ El sistema consta de los siguientes archivos principales:
 
 1. Asegúrate de tener instaladas todas las dependencias:
    ```
-   pip install PyQt5 matplotlib openpyxl
+   pip install PyQt5 openpyxl
    ```
 
 2. Crea las carpetas necesarias:
@@ -34,13 +33,6 @@ El sistema consta de los siguientes archivos principales:
    ```
    python main_mejorado.py
    ```
-
-## Inicio de sesión
-
-Al iniciar la aplicación, se mostrará una pantalla de inicio de sesión:
-
-- Usuario por defecto: `admin`
-- Contraseña por defecto: `admin123`
 
 ## Funcionalidades principales
 
@@ -73,14 +65,6 @@ Al iniciar la aplicación, se mostrará una pantalla de inicio de sesión:
 3. Haz clic en "Aplicar Filtros" para actualizar la vista
 4. Exporta los datos filtrados a CSV o Excel
 
-### Estadísticas
-
-1. Selecciona la pestaña "Estadísticas"
-2. Selecciona el rango de fechas para el análisis
-3. Visualiza resumen de ingresos, tipos de vehículos y horas pico
-4. Observa los gráficos generados automáticamente
-
-
 ## Mejoras implementadas
 
 1. **Interfaz mejorada**:
@@ -92,8 +76,6 @@ Al iniciar la aplicación, se mostrará una pantalla de inicio de sesión:
 2. **Funcionalidades avanzadas**:
    - Soporte para fechas completas y minutos
    - Cálculo de tarifas por fracciones de hora
-   - Sistema de usuarios y permisos
-   - Estadísticas con gráficos
    - Exportación a Excel
 
 3. **Mayor robustez**:
@@ -101,7 +83,7 @@ Al iniciar la aplicación, se mostrará una pantalla de inicio de sesión:
    - Respaldo de datos
    - Mejor manejo de errores
 
-### Tutoriales para ententer las implementaciones
+### Tutoriales para entender las implementaciones
     Tutoriales de PyQt5
     Documentación oficial de PyQt5: https://www.riverbankcomputing.com/static/Docs/PyQt5/
     Tutorial de PyQt5 en RealPython: https://realpython.com/python-pyqt-gui-calculator/
@@ -111,13 +93,7 @@ Al iniciar la aplicación, se mostrará una pantalla de inicio de sesión:
     Tutorial de SQLite en Python: https://www.sqlitetutorial.net/sqlite-python/
     Documentación oficial de sqlite3 en Python: https://docs.python.org/3/library/sqlite3.html
 
-    Tutoriales de Matplotlib para gráficos
-    Documentación oficial de Matplotlib: https://matplotlib.org/stable/tutorials/index.html
-    Tutorial de Matplotlib en DataCamp: https://www.datacamp.com/community/tutorials/matplotlib-tutorial-python
-
     GitHub: Busca proyectos similares con "parking management system pyqt"
     "Building a Parking Management System with PyQt5 and SQLite" en Udemy
     "Python Desktop Applications with PyQt" en Pluralsight
-    "Sistema de Gestión con Python y SQLite" en Platzi (en español )
-    
-
+    "Sistema de Gestión con Python y SQLite" en Platzi (en español)
